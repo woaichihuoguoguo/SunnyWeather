@@ -1,5 +1,6 @@
 package com.sunnyweather.android.ui.weather
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -7,10 +8,14 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.annotation.RequiresApi
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.sunnyweather.android.R
 import com.sunnyweather.android.logic.model.Sky
 import com.sunnyweather.android.logic.model.Weather
@@ -19,18 +24,21 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class WeatherActivity : AppCompatActivity() {
-    private val viewModel by lazy { ViewModelProvider(this).get(WeatherViewModel::class.java) }
-    private lateinit var placeName:TextView
-    private lateinit var currentTemp:TextView
-    private lateinit var currentSky:TextView
-    private lateinit var currentAQI:TextView
-    private lateinit var nowLayout: RelativeLayout
-    private lateinit var forecastLayout: LinearLayout
-    private lateinit var coldRiskText:TextView
-    private lateinit var dressingText:TextView
-    private lateinit var ultravioletText:TextView
-    private lateinit var carWashingText:TextView
-    private lateinit var weatherLayout: ScrollView
+    val viewModel by lazy { ViewModelProvider(this).get(WeatherViewModel::class.java) }
+    lateinit var placeName:TextView
+    lateinit var currentTemp:TextView
+    lateinit var currentSky:TextView
+    lateinit var currentAQI:TextView
+    lateinit var nowLayout: RelativeLayout
+    lateinit var forecastLayout: LinearLayout
+    lateinit var coldRiskText:TextView
+    lateinit var dressingText:TextView
+    lateinit var ultravioletText:TextView
+    lateinit var carWashingText:TextView
+    lateinit var weatherLayout: ScrollView
+    lateinit var swipeRefresh: SwipeRefreshLayout
+    lateinit var navBtn:Button
+    lateinit var drawerLayout:DrawerLayout
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,8 +66,25 @@ class WeatherActivity : AppCompatActivity() {
                 Toast.makeText(this,"无法成功获取天气信息",Toast.LENGTH_SHORT).show()
                 result.exceptionOrNull()?.printStackTrace()
             }
+            swipeRefresh.isRefreshing=false
         })
-        viewModel.refreshWeather(viewModel.locationLng,viewModel.locationLat)
+        swipeRefresh.setColorSchemeResources(R.color.design_default_color_primary)
+        refreshWeather()
+        swipeRefresh.setOnRefreshListener {
+            refreshWeather()
+        }
+        navBtn.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.START)
+        }
+        drawerLayout.addDrawerListener(object :DrawerLayout.DrawerListener{
+            override fun onDrawerStateChanged(newState: Int) {}
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {}
+            override fun onDrawerOpened(drawerView: View) {}
+            override fun onDrawerClosed(drawerView: View) {
+                val manager=getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                manager.hideSoftInputFromWindow(drawerView.windowToken,InputMethodManager.HIDE_NOT_ALWAYS)
+            }
+        })
     }
     private fun init(){
         placeName=findViewById(R.id.placeName)
@@ -73,6 +98,13 @@ class WeatherActivity : AppCompatActivity() {
         ultravioletText=findViewById(R.id.ultravioletText)
         carWashingText=findViewById(R.id.carWashingText)
         weatherLayout=findViewById(R.id.weatherLayout)
+        swipeRefresh=findViewById(R.id.swipeRefresh)
+        navBtn=findViewById(R.id.navBtn)
+        drawerLayout=findViewById(R.id.drawerLayout)
+    }
+    fun refreshWeather(){
+        viewModel.refreshWeather(viewModel.locationLng,viewModel.locationLat)
+        swipeRefresh.isRefreshing=true
     }
     private fun showWeatherInfo(weather: Weather){
         placeName.text=viewModel.placeName
@@ -112,6 +144,5 @@ class WeatherActivity : AppCompatActivity() {
         ultravioletText.text=lifeIndex.ultraviolet[0].desc
         carWashingText.text=lifeIndex.carWashing[0].desc
         weatherLayout.visibility= View.VISIBLE
-
     }
 }
