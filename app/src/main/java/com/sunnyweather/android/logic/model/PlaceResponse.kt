@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 /**
  * @author 郭梦龙
  * @data 8/15/21-8:25 PM
+ *
  */
 data class PlaceResponse (val status:String,val places:List<Place>)
 data class Place(val name:String,val location:Location,
